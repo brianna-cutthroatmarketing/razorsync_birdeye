@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "The `TimerTrigger` makes it incredibly easy to have your functions executed on a schedule. This sample demonstrates a simple use case of calling your function every 5 minutes.",
   "main": "index.js",
+  "engines":{"node": "8.11.x"}, 
   "dependencies": {
     "express-async-handler": "^1.1.4",
     "request": "^2.88.0",
