@@ -1,0 +1,17 @@
+{
+  "name": "timertriggerjs",
+  "version": "1.0.0",
+  "description": "The `TimerTrigger` makes it incredibly easy to have your functions executed on a schedule. This sample demonstrates a simple use case of calling your function every 5 minutes.",
+  "main": "index.js",
+  "dependencies": {
+    "express-async-handler": "^1.1.4",
+    "request": "^2.88.0",
+    "underscore": "^1.9.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Brianna Wegryn",
+  "license": "ISC"
+}
