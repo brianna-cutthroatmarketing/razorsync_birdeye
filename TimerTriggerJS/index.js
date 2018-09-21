@@ -11,7 +11,7 @@ module.exports = async function (context, myTimer) {
     {
         context.log('JavaScript is running late!');
     }
-    fullAutomation(context);
+    await fullAutomation(context);
     context.log('JavaScript timer trigger function ran!', timeStamp);   
 };
 
@@ -100,5 +100,3 @@ const publishData = (context, customer) => {
 	});
 
 }
-
-//fullAutomation();
