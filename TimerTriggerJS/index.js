@@ -54,10 +54,10 @@ const gatherCustomerData = (context) => {
 
 const parseAndPublishData = (context, customer_data) => {
 	_.each(customer_data, asyncHandler(async(customer) => {
-		if (customer.Contacts.length > 1) { context.log(`customer with multiple contacts ${JSON.stringify(customer)}`); }
+		if (customer.Contacts.length > 1) { context.log(`\ncustomer with multiple contacts ${JSON.stringify(customer)}\n`); }
 		try {
-			if (customer && customer.Contacts &&  customer.Contacts[0]) {
-				let contact = customer.Contacts[0];
+			if (customer && customer.Contacts) {
+				let contact = customer.Contacts[customer.Contacts.length - 1];
 				await publishData(context, {name: `${contact.FirstName} ${contact.LastName}`, emailId: contact.Email, phone: contact.Phone, smsEnabled: (contact.NotifyViaSms ? 1 : 0), employees: []});
 			}
 		} catch (error) {
@@ -77,6 +77,7 @@ const publishData = (context, customer) => {
 	context.log(`should now push customer: ${JSON.stringify(customer)}`);
 
 	return new Promise(function(resolve, reject) {
+		// resolve(true);
 		request({
 			method: 'POST',
 			url: "https://api.birdeye.com/resources/v1/customer/checkin",
@@ -100,3 +101,5 @@ const publishData = (context, customer) => {
 	});
 
 }
+
+//fullAutomation(console);
