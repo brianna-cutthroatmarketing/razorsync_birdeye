@@ -18,8 +18,10 @@ module.exports = async function (context, myTimer) {
 
 const fullAutomation200Plus = asyncHandler(async(context) => {
 	try {
-		let work_orders = _.filter(await gatherWorkOrders(context), function(order) { return order.ServiceRequestId; });
+		let work_orders = await gatherWorkOrders(context);
 		let service_orders = {}, customer_orders = {};
+
+		context.log(`work_orders: ${JSON.stringify(work_orders)}`)
 
 		await Promise.all( work_orders.map( async order => {
 			if (!service_orders[order.ServiceRequestId]) {
@@ -66,7 +68,9 @@ const gatherWorkOrders = (context) => {
 			if (error || (response && response.statusCode != 200)) {
 				reject(error || response);
 			} else {
-				resolve(response.body);
+				// still need to filter to ensure endDate was within the epoch range
+				context.log(`orders: ${JSON.stringify(response.body)}`);
+				resolve(_.filter(response.body, function(order) { return order.ServiceRequestId && parseInt(order.EndDate.slice(6, 19)) > (epochTime - (24 * 60 * 60 * 1000)); }));
 			}
 		});
 	});
@@ -176,4 +180,4 @@ const publishData = (context, customer) => {
 	});
 
 }
-fullAutomation200Plus(console);
+//fullAutomation200Plus(console);
