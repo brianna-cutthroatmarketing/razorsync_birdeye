@@ -56,7 +56,7 @@ const fullAutomation200Plus = asyncHandler(async(context) => {
 const sendErrorEmail = (error) => {
 	const msg = {
 		to: 'brianna@cutthroatmarketing.com',
-		from: 'brianna@cutthroatmarketing.com',
+		from: 'geoffrey@cutthroatmarketing.com',
 		subject: `[ERROR] KayPlumbing script`,
 		text: `Error details: ${JSON.stringify(error)}`
 	};
