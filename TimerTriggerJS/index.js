@@ -1,27 +1,34 @@
+'use strict'
+
 const request = require('request');
 const asyncHandler = require('express-async-handler');
 const _ = require('underscore');
-//const { forEach } = require('p-iteration');
+const sgMail = require('@sendgrid/mail');
 
-let index = 10;
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+let razorsync_headers = {
+	"Token": process.env.RAZORSYNC_TOKEN,
+	"Host": `${process.env.RAZORSYNC_HOST}.0.razorsync.com`,
+	"ServerName": process.env.RAZORSYNC_HOST,
+	"Content-Type": "application/json",
+    "User-Agent": "node.js"
+};
 
 module.exports = async function (context, myTimer) {
-    var timeStamp = new Date().toISOString();
-    
+
     if(myTimer.isPastDue)
     {
         context.log('JavaScript is running late!');
     }
-    await fullAutomation200Plus(context);
-    context.log('JavaScript timer trigger function ran!', timeStamp);   
+
+    await fullAutomation200Plus(context); 
 };
 
 const fullAutomation200Plus = asyncHandler(async(context) => {
 	try {
 		let work_orders = await gatherWorkOrders(context);
 		let service_orders = {}, customer_orders = {};
-
-		context.log(`work_orders: ${JSON.stringify(work_orders)}`)
 
 		await Promise.all( work_orders.map( async order => {
 			if (!service_orders[order.ServiceRequestId]) {
@@ -40,25 +47,32 @@ const fullAutomation200Plus = asyncHandler(async(context) => {
 				await publishData(context, {name: `${contact.FirstName} ${contact.LastName}`, emailId: contact.Email, phone: contact.Phone, smsEnabled: (contact.NotifyViaSms ? 1 : 0), employees: []});
 			}
 		}));
+
+		context.done(`Script ran successfully and finished at ${new Date().toISOString()}`);
 	} catch (error) {
 		context.error(`encountered error: ${JSON.stringify(error)}`);
+		sendErrorEmail(error);
 	}
 })
 
+const sendErrorEmail = (error) => {
+	const msg = {
+		to: 'brianna@cutthroatmarketing.com',
+		from: 'brianna@cutthroatmarketing.com',
+		subject: `[ERROR] KayPlumbing script`,
+		text: `Error details: ${JSON.stringify(error)}`
+	};
+
+	sgMail.send(msg);
+}
+
 const gatherWorkOrders = (context) => {
 	let epochTime = (new Date).getTime();
-	context.log(`epochTime: ${epochTime}`);
 	return new Promise(function(resolve, reject) {
 		request({
 			method: 'POST',
-			url: "https://kayplumbingservices.0.razorsync.com/ApiService.svc/WorkOrder/List",
-			headers: {
-				"Token": "5a442567-97ee-4652-8f8a-0269b53b6b1e",
-				"Host": "kayplumbingservices.0.razorsync.com",
-				"ServerName": "kayplumbingservices",
-				"Content-Type": "application/json",
-		        "User-Agent": "node.js"
-			},
+			url: `https://${process.env.RAZORSYNC_HOST}.0.razorsync.com/ApiService.svc/WorkOrder/List`,
+			headers: razorsync_headers,
 			body: {
 				"FromModifiedDate":`/Date(${epochTime - (24 * 60 * 60 * 1000)})/`,
 				"ToModifiedDate":`/Date(${epochTime})/`
@@ -68,8 +82,6 @@ const gatherWorkOrders = (context) => {
 			if (error || (response && response.statusCode != 200)) {
 				reject(error || response);
 			} else {
-				// still need to filter to ensure endDate was within the epoch range
-				context.log(`orders: ${JSON.stringify(response.body)}`);
 				resolve(_.filter(response.body, function(order) { return order.ServiceRequestId && parseInt(order.EndDate.slice(6, 19)) > (epochTime - (24 * 60 * 60 * 1000)); }));
 			}
 		});
@@ -80,14 +92,8 @@ const gatherServiceOrdersByID = (context, service_order_id) => {
 	return new Promise(function(resolve, reject) {
 		request({
 			method: 'GET',
-			url: `https://kayplumbingservices.0.razorsync.com/ApiService.svc/ServiceRequest/${service_order_id}`,
-			headers: {
-				"Token": "5a442567-97ee-4652-8f8a-0269b53b6b1e",
-				"Host": "kayplumbingservices.0.razorsync.com",
-				"ServerName": "kayplumbingservices",
-				"Content-Type": "application/json",
-		        "User-Agent": "node.js"
-			},
+			url: `https://${process.env.RAZORSYNC_HOST}.0.razorsync.com/ApiService.svc/ServiceRequest/${service_order_id}`,
+			headers: razorsync_headers,
 			json: true
 		}, function(error, response) {
 			if (error || (response && response.statusCode != 200)) {
@@ -103,14 +109,8 @@ const gatherWorkOrderServiceItems = (context, order) => {
 	return new Promise(function(resolve, reject) {
 		request({
 			method: 'GET',
-			url: `https://kayplumbingservices.0.razorsync.com/ApiService.svc/WorkOrderServiceItem/List/${order.Id}`,
-			headers: {
-				"Token": "5a442567-97ee-4652-8f8a-0269b53b6b1e",
-				"Host": "kayplumbingservices.0.razorsync.com",
-				"ServerName": "kayplumbingservices",
-				"Content-Type": "application/json",
-		        "User-Agent": "node.js"
-			},
+			url: `https://${process.env.RAZORSYNC_HOST}.0.razorsync.com/ApiService.svc/WorkOrderServiceItem/List/${order.Id}`,
+			headers: razorsync_headers,
 			json: true
 		}, function(error, response) {
 			if (error || (response && response.statusCode != 200)) {
@@ -126,14 +126,8 @@ const gatherSpecificCustomerData = (context, customer_id) => {
 	return new Promise(function(resolve, reject) {
 		request({
 			method: 'GET',
-			url: `https://kayplumbingservices.0.razorsync.com/ApiService.svc/Contact/List/${customer_id}`,
-			headers: {
-				"Token": "5a442567-97ee-4652-8f8a-0269b53b6b1e",
-				"Host": "kayplumbingservices.0.razorsync.com",
-				"ServerName": "kayplumbingservices",
-				"Content-Type": "application/json",
-		        "User-Agent": "node.js"
-			},
+			url: `https://${process.env.RAZORSYNC_HOST}.0.razorsync.com/ApiService.svc/Contact/List/${customer_id}`,
+			headers: razorsync_headers,
 			json: true
 		}, function(error, response) {
 			context.log(`res: ${JSON.stringify(response.body)}`);
@@ -147,12 +141,12 @@ const gatherSpecificCustomerData = (context, customer_id) => {
 }
 
 const publishData = (context, customer) => {
-	
-	// TEMP overwrite phone number & email for test
-	customer.emailId = `bri+${index}@pensivesecurity.io`;
-	customer.phone = `703-419-05${index}`;
 
-	index ++;
+	if (process.env.NODE_ENV !== "production") {
+		let random_index = Math.floor(Math.random() * 9000) + 1000;
+		customer.emailId = `bri+${random_index}@pensivesecurity.io`;
+		customer.phone = `703-419-${random_index}`;
+	}
 
 	context.log(`should now push customer: ${JSON.stringify(customer)}`);
 
@@ -161,8 +155,8 @@ const publishData = (context, customer) => {
 			method: 'POST',
 			url: "https://api.birdeye.com/resources/v1/customer/checkin",
 			qs: {
-				"bid": "153737826777714",
-				"api_key": "YakceqCnXhjfUqSSujYnNjMMyq4gro89"
+				"bid": process.env.BIRDEYE_BID,
+				"api_key": process.env.BIRDEYE_API_KEY
 			},
 			headers: {
 				"Content-Type": "application/json",
@@ -180,4 +174,5 @@ const publishData = (context, customer) => {
 	});
 
 }
-//fullAutomation200Plus(console);
+
+fullAutomation200Plus(console);
