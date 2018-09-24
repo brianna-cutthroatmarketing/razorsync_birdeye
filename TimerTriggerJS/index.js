@@ -47,8 +47,6 @@ const fullAutomation200Plus = asyncHandler(async(context) => {
 				await publishData(context, {name: `${contact.FirstName} ${contact.LastName}`, emailId: contact.Email, phone: contact.Phone, smsEnabled: (contact.NotifyViaSms ? 1 : 0), employees: []});
 			}
 		}));
-
-		context.done(`Script ran successfully and finished at ${new Date().toISOString()}`);
 	} catch (error) {
 		context.error(`encountered error: ${JSON.stringify(error)}`);
 		sendErrorEmail(error);
@@ -174,5 +172,3 @@ const publishData = (context, customer) => {
 	});
 
 }
-
-fullAutomation200Plus(console);
